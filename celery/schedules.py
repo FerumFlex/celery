@@ -489,26 +489,30 @@ class crontab(BaseSchedule):
 
         def roll_over():
             for _ in range(2000):
-                flag = (datedata.dom == len(days_of_month) or
-                        day_out_of_range(datedata.year,
-                                         months_of_year[datedata.moy],
-                                         days_of_month[datedata.dom]) or
-                        (is_before_last_run(datedata.year,
-                                            months_of_year[datedata.moy],
-                                            days_of_month[datedata.dom])))
-
-                if flag:
+                ymd_tuple = (
+                    datedata.year,
+                    months_of_year[datedata.moy],
+                    days_of_month[datedata.dom % len(days_of_month)],
+                )
+                if datedata.dom == len(days_of_month) or day_out_of_range(*ymd_tuple):
+                    # Invalid day-of-month/date: roll over to next month/year.
                     datedata.dom = 0
                     datedata.moy += 1
                     if datedata.moy == len(months_of_year):
                         datedata.moy = 0
                         datedata.year += 1
+                elif is_before_last_run(*ymd_tuple):
+                    datedata.dom += 1
+                elif datetime(*ymd_tuple).isoweekday() % 7 not in self.day_of_week:
+                    # We do not use this, but that `while 1` was trash.
+                    datedata.dom += 1
                 else:
                     break
             else:
                 # Tried 2000 times, we're most likely in an infinite loop
-                raise RuntimeError('unable to rollover, '
-                                   'time specification is probably invalid')
+                raise RuntimeError(
+                    "unable to rollover, time specification is probably invalid"
+                )
 
         if last_run_at.month in self.month_of_year:
             datedata.dom = bisect(days_of_month, last_run_at.day)
@@ -518,16 +522,8 @@ class crontab(BaseSchedule):
             datedata.moy = bisect(months_of_year, last_run_at.month)
             if datedata.moy == len(months_of_year):
                 datedata.moy = 0
-        roll_over()
 
-        while 1:
-            th = datetime(year=datedata.year,
-                          month=months_of_year[datedata.moy],
-                          day=days_of_month[datedata.dom])
-            if th.isoweekday() % 7 in self.day_of_week:
-                break
-            datedata.dom += 1
-            roll_over()
+        roll_over()
 
         return ffwd(year=datedata.year,
                     month=months_of_year[datedata.moy],
