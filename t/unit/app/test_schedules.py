@@ -251,6 +251,13 @@ class test_crontab_remaining_estimate:
         crontab.nowfun = lambda: now
         return now + crontab.remaining_estimate(now)
 
+    def test_negative_timezone(self):
+        next = self.next_ocurrance(
+            self.crontab(minute="15", hour="21", day_of_month="1-4,8-31"),
+            datetime(2020, 9, 1, 22, 00, tzinfo=pytz.timezone("US/Central")),
+        )
+        assert next == datetime(2020, 9, 2, 21, 15, tzinfo=pytz.timezone("US/Central"))
+
     def test_next_minute(self):
         next = self.next_ocurrance(
             self.crontab(), datetime(2010, 9, 11, 14, 30, 15),

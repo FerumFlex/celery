@@ -482,9 +482,10 @@ class crontab(BaseSchedule):
             return False
 
         def is_before_last_run(year, month, day):
-            return self.maybe_make_aware(datetime(year,
-                                                  month,
-                                                  day)) < last_run_at
+            d = datetime(year, month, day)
+            if last_run_at and last_run_at.tzinfo:
+                d = d.replace(tzinfo=last_run_at.tzinfo)
+            return d < last_run_at
 
         def roll_over():
             for _ in range(2000):
