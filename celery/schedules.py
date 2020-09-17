@@ -504,7 +504,6 @@ class crontab(BaseSchedule):
                 elif is_before_last_run(*ymd_tuple):
                     datedata.dom += 1
                 elif datetime(*ymd_tuple).isoweekday() % 7 not in self.day_of_week:
-                    # We do not use this, but that `while 1` was trash.
                     datedata.dom += 1
                 else:
                     break
